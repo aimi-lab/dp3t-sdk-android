@@ -38,16 +38,13 @@ public class SyncWorker extends Worker {
 	private static final String TAG = "SyncWorker";
 	private static final String WORK_TAG = "org.dpppt.android.sdk.internal.SyncWorker";
 
-	private static PublicKey bucketSignaturePublicKey;
+	// private static PublicKey bucketSignaturePublicKey;
 
 	public static void startSyncWorker(Context context) {
-		Constraints constraints = new Constraints.Builder()
-				.setRequiredNetworkType(NetworkType.CONNECTED)
-				.build();
+		Constraints constraints = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
 
-		PeriodicWorkRequest periodicWorkRequest = new PeriodicWorkRequest.Builder(SyncWorker.class, 15, TimeUnit.MINUTES)
-				.setConstraints(constraints)
-				.build();
+		PeriodicWorkRequest periodicWorkRequest = new PeriodicWorkRequest.Builder(SyncWorker.class, 15,
+				TimeUnit.MINUTES).setConstraints(constraints).build();
 
 		WorkManager workManager = WorkManager.getInstance(context);
 		workManager.enqueueUniquePeriodicWork(WORK_TAG, ExistingPeriodicWorkPolicy.KEEP, periodicWorkRequest);
@@ -62,9 +59,9 @@ public class SyncWorker extends Worker {
 		super(context, workerParams);
 	}
 
-	public static void setBucketSignaturePublicKey(PublicKey publicKey) {
-		bucketSignaturePublicKey = publicKey;
-	}
+	// public static void setBucketSignaturePublicKey(PublicKey publicKey) {
+	// bucketSignaturePublicKey = publicKey;
+	// }
 
 	@NonNull
 	@Override
@@ -78,7 +75,8 @@ public class SyncWorker extends Worker {
 
 		try {
 			doSync(context);
-		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException | SQLiteException e) {
+		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException
+				| SQLiteException e) {
 			Logger.d(TAG, "SyncWorker finished with exception " + e.getMessage());
 			return Result.retry();
 		}
@@ -94,7 +92,8 @@ public class SyncWorker extends Worker {
 			AppConfigManager.getInstance(context).setLastSyncNetworkSuccess(true);
 			SyncErrorState.getInstance().setSyncError(null);
 			BroadcastHelper.sendErrorUpdateBroadcast(context);
-		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException | SQLiteException e) {
+		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException
+				| SQLiteException e) {
 			Logger.e(TAG, e);
 			AppConfigManager.getInstance(context).setLastSyncNetworkSuccess(false);
 			ErrorState syncError;
@@ -115,10 +114,11 @@ public class SyncWorker extends Worker {
 		}
 	}
 
-	private static void doSyncInternal(Context context) throws IOException, StatusCodeException, ServerTimeOffsetException {
+	private static void doSyncInternal(Context context)
+			throws IOException, StatusCodeException, ServerTimeOffsetException {
 		AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
 		appConfigManager.updateFromDiscoverySynchronous();
-		ApplicationInfo appConfig = appConfigManager.getAppConfig();
+		// ApplicationInfo appConfig = appConfigManager.getAppConfig();
 
 		Database database = new Database(context);
 		database.generateContactsFromHandshakes(context);
@@ -132,25 +132,23 @@ public class SyncWorker extends Worker {
 			nextBatchReleaseTime = lastLoadedBatchReleaseTime + BATCH_LENGTH;
 		}
 
-		BackendBucketRepository backendBucketRepository =
-				new BackendBucketRepository(context, appConfig.getBucketBaseUrl(), bucketSignaturePublicKey);
+		for (ApplicationInfo appConfig : appConfigManager.getLoadedApplicationList().getApplications()) {
 
-		for (long batchReleaseTime = nextBatchReleaseTime;
-			 batchReleaseTime < System.currentTimeMillis();
-			 batchReleaseTime += BATCH_LENGTH) {
+			BackendBucketRepository backendBucketRepository = new BackendBucketRepository(context,
+					appConfig.getBucketBaseUrl(), appConfig.getBucketSignaturePublicKey());
 
-			Exposed.ProtoExposedList result = backendBucketRepository.getExposees(batchReleaseTime);
-			long batchReleaseServerTime = result.getBatchReleaseTime();
-			for (Exposed.ProtoExposeeOrBuilder exposee : result.getExposedOrBuilderList()) {
-				database.addKnownCase(
-						context,
-						exposee.getKey().toByteArray(),
-						exposee.getKeyDate(),
-						batchReleaseServerTime
-				);
+			for (long batchReleaseTime = nextBatchReleaseTime; batchReleaseTime < System
+					.currentTimeMillis(); batchReleaseTime += BATCH_LENGTH) {
+
+				Exposed.ProtoExposedList result = backendBucketRepository.getExposees(batchReleaseTime);
+				long batchReleaseServerTime = result.getBatchReleaseTime();
+				for (Exposed.ProtoExposeeOrBuilder exposee : result.getExposedOrBuilderList()) {
+					database.addKnownCase(context, exposee.getKey().toByteArray(), exposee.getKeyDate(),
+							batchReleaseServerTime);
+				}
+
+				appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
 			}
-
-			appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
 		}
 
 		database.removeOldData();

@@ -56,38 +56,56 @@ public class DP3T {
 
 	private static String appId;
 
-	public static void init(Context context, String appId, PublicKey signaturePublicKey) {
-		init(context, appId, false, signaturePublicKey);
+	// public static void init(Context context, String appId, PublicKey
+	// signaturePublicKey) {
+	// init(context, appId, false, signaturePublicKey);
+	// }
+
+	// public static void init(Context context, String appId, boolean
+	// enableDevDiscoveryMode,
+	// PublicKey signaturePublicKey) {
+	// if (ProcessUtil.isMainProcess(context)) {
+	// DP3T.appId = appId;
+	// AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
+	// appConfigManager.setAppId(appId);
+	// appConfigManager.setDevDiscoveryModeEnabled(enableDevDiscoveryMode);
+	// appConfigManager.triggerLoad();
+
+	// executeInit(context, signaturePublicKey);
+	// }
+	// }
+
+	public static void removeEndpoint(Context context, ApplicationInfo appInfo) {
+		checkInit();
+		AppConfigManager acm = AppConfigManager.getInstance(context);
+		acm.removeManualApplicationInfo(appInfo);
 	}
 
-	public static void init(Context context, String appId, boolean enableDevDiscoveryMode, PublicKey signaturePublicKey) {
-		if (ProcessUtil.isMainProcess(context)) {
-			DP3T.appId = appId;
-			AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
-			appConfigManager.setAppId(appId);
-			appConfigManager.setDevDiscoveryModeEnabled(enableDevDiscoveryMode);
-			appConfigManager.triggerLoad();
-
-			executeInit(context, signaturePublicKey);
-		}
-	}
-
-	public static void init(Context context, ApplicationInfo applicationInfo, PublicKey signaturePublicKey) {
+	// public static void init(Context context, ApplicationInfo applicationInfo,
+	// PublicKey signaturePublicKey) {
+	public static void init(Context context, ApplicationInfo applicationInfo) {
 		if (ProcessUtil.isMainProcess(context)) {
 			DP3T.appId = applicationInfo.getAppId();
 			AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
-			appConfigManager.setManualApplicationInfo(applicationInfo);
 
-			executeInit(context, signaturePublicKey);
+			if (appId == null) { // checkInit
+				appConfigManager.setManualApplicationInfo(applicationInfo);
+				executeInit(context);
+			} else {
+				// subsequent call to init()
+				appConfigManager.addManualApplicationInfo(applicationInfo);
+			}
 		}
 	}
 
-	private static void executeInit(Context context, PublicKey signaturePublicKey) {
+	// private static void executeInit(Context context, PublicKey
+	// signaturePublicKey) {
+	private static void executeInit(Context context) {
 		CryptoModule.getInstance(context).init();
 
 		new Database(context).removeOldData();
 
-		SyncWorker.setBucketSignaturePublicKey(signaturePublicKey);
+		// SyncWorker.setBucketSignaturePublicKey(signaturePublicKey);
 
 		AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
 		boolean advertising = appConfigManager.isAdvertisingEnabled();
@@ -134,7 +152,8 @@ public class DP3T {
 		checkInit();
 		try {
 			SyncWorker.doSync(context);
-		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SQLiteException | SignatureException ignored) {
+		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SQLiteException
+				| SignatureException ignored) {
 			// has been handled upstream
 		}
 	}
@@ -153,15 +172,9 @@ public class DP3T {
 		} else {
 			infectionStatus = InfectionStatus.HEALTHY;
 		}
-		return new TracingStatus(
-				database.getContacts().size(),
-				appConfigManager.isAdvertisingEnabled(),
-				appConfigManager.isReceivingEnabled(),
-				appConfigManager.getLastSyncDate(),
-				infectionStatus,
-				exposureDays,
-				errorStates
-		);
+		return new TracingStatus(database.getContacts().size(), appConfigManager.isAdvertisingEnabled(),
+				appConfigManager.isReceivingEnabled(), appConfigManager.getLastSyncDate(), infectionStatus,
+				exposureDays, errorStates);
 	}
 
 	public static void sendIAmInfected(Context context, Date onset, ExposeeAuthMethod exposeeAuthMethod,
@@ -169,7 +182,8 @@ public class DP3T {
 		checkInit();
 
 		DayDate onsetDate = new DayDate(onset.getTime());
-		ExposeeRequest exposeeRequest = CryptoModule.getInstance(context).getSecretKeyForPublishing(onsetDate, exposeeAuthMethod);
+		ExposeeRequest exposeeRequest = CryptoModule.getInstance(context).getSecretKeyForPublishing(onsetDate,
+				exposeeAuthMethod);
 
 		AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
 		try {
@@ -203,10 +217,11 @@ public class DP3T {
 		if (exposeeAuthMethod instanceof ExposeeAuthMethodJson) {
 			jsonAuthMethod = (ExposeeAuthMethodJson) exposeeAuthMethod;
 		}
-		ExposeeRequest exposeeRequest = new ExposeeRequest(toBase64(CryptoModule.getInstance(context).getNewRandomKey()),
-				onsetDate.getStartOfDayTimestamp(), 1, jsonAuthMethod);
-		AppConfigManager.getInstance(context).getBackendReportRepository(context)
-				.addExposeeSync(exposeeRequest, exposeeAuthMethod);
+		ExposeeRequest exposeeRequest = new ExposeeRequest(
+				toBase64(CryptoModule.getInstance(context).getNewRandomKey()), onsetDate.getStartOfDayTimestamp(), 1,
+				jsonAuthMethod);
+		AppConfigManager.getInstance(context).getBackendReportRepository(context).addExposeeSync(exposeeRequest,
+				exposeeAuthMethod);
 	}
 
 	public static void stop(Context context) {
@@ -222,7 +237,8 @@ public class DP3T {
 		BroadcastHelper.sendUpdateBroadcast(context);
 	}
 
-	public static void setMatchingParameters(Context context, float contactAttenuationThreshold, int numberOfWindowsForExposure) {
+	public static void setMatchingParameters(Context context, float contactAttenuationThreshold,
+			int numberOfWindowsForExposure) {
 		checkInit();
 
 		AppConfigManager appConfigManager = AppConfigManager.getInstance(context);

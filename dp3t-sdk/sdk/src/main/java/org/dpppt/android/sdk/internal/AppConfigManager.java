@@ -100,6 +100,20 @@ public class AppConfigManager {
 		sharedPrefs.edit().putString(PREF_APPLICATION_LIST, Json.toJson(applicationsList)).apply();
 	}
 
+	public void addManualApplicationInfo(ApplicationInfo appInfo) {
+		ApplicationList list = getLoadedApplicationsList();
+		if (!list.getApplications().contains(appInfo)) {
+			list.getApplications().add(appInfo);
+			sharedPrefs.edit().putString(PREF_APPLICATION_LIST, Json.toJson(list)).apply();
+		}
+	}
+
+	public void removeManualApplicationInfo(ApplicationInfo appInfo) {
+		ApplicationList list = getLoadedApplicationsList();
+		list.getApplications().remove(appInfo);
+		sharedPrefs.edit().putString(PREF_APPLICATION_LIST, Json.toJson(list)).apply();
+	}
+
 	public void updateFromDiscoverySynchronous() throws IOException {
 		if (useDiscovery) {
 			ApplicationsList response = discoveryRepository.getDiscoverySync(isDevDiscoveryMode);
@@ -181,8 +195,8 @@ public class AppConfigManager {
 	public void setCalibrationTestDeviceName(String name) {
 		if (name != null && name.length() != CALIBRATION_TEST_DEVICE_NAME_LENGTH) {
 			throw new IllegalArgumentException(
-					"CalibrationTestDevice Name must have length " + CALIBRATION_TEST_DEVICE_NAME_LENGTH + ", provided string '" +
-							name + "' with length " + name.length());
+					"CalibrationTestDevice Name must have length " + CALIBRATION_TEST_DEVICE_NAME_LENGTH
+							+ ", provided string '" + name + "' with length " + name.length());
 		}
 		sharedPrefs.edit().putString(PREF_CALIBRATION_TEST_DEVICE_NAME, name).apply();
 	}
@@ -212,12 +226,13 @@ public class AppConfigManager {
 	}
 
 	public BluetoothTxPowerLevel getBluetoothTxPowerLevel() {
-		return BluetoothTxPowerLevel.values()[sharedPrefs
-				.getInt(PREF_ADVERTISEMENT_POWER_LEVEL, DEFAULT_BLUETOOTH_POWER_LEVEL.ordinal())];
+		return BluetoothTxPowerLevel.values()[sharedPrefs.getInt(PREF_ADVERTISEMENT_POWER_LEVEL,
+				DEFAULT_BLUETOOTH_POWER_LEVEL.ordinal())];
 	}
 
 	public BluetoothScanMode getBluetoothScanMode() {
-		return BluetoothScanMode.values()[sharedPrefs.getInt(PREF_BLUETOOTH_SCAN_MODE, DEFAULT_BLUETOOTH_SCAN_MODE.ordinal())];
+		return BluetoothScanMode.values()[sharedPrefs.getInt(PREF_BLUETOOTH_SCAN_MODE,
+				DEFAULT_BLUETOOTH_SCAN_MODE.ordinal())];
 	}
 
 	public void setBluetoothScanMode(BluetoothScanMode scanMode) {
@@ -229,8 +244,8 @@ public class AppConfigManager {
 	}
 
 	public BluetoothAdvertiseMode getBluetoothAdvertiseMode() {
-		return BluetoothAdvertiseMode.values()[sharedPrefs
-				.getInt(PREF_ADVERTISEMENT_MODE, DEFAULT_BLUETOOTH_ADVERTISE_MODE.ordinal())];
+		return BluetoothAdvertiseMode.values()[sharedPrefs.getInt(PREF_ADVERTISEMENT_MODE,
+				DEFAULT_BLUETOOTH_ADVERTISE_MODE.ordinal())];
 	}
 
 	public boolean isScanResponseEnabled() {
