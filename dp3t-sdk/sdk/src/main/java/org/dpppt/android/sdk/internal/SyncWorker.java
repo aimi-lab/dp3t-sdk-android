@@ -132,7 +132,7 @@ public class SyncWorker extends Worker {
 			nextBatchReleaseTime = lastLoadedBatchReleaseTime + BATCH_LENGTH;
 		}
 
-		for (ApplicationInfo appConfig : appConfigManager.getLoadedApplicationList().getApplications()) {
+		for (ApplicationInfo appConfig : appConfigManager.getLoadedApplicationsList().getApplications()) {
 
 			BackendBucketRepository backendBucketRepository = new BackendBucketRepository(context,
 					appConfig.getBucketBaseUrl(), appConfig.getBucketSignaturePublicKey());

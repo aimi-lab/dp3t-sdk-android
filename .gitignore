@@ -22,3 +22,5 @@
 hs_err_pid*
 calibration-app/app/.project
 dp3t-sdk/sdk/.project
+calibration-app/.project
+dp3t-sdk/.project

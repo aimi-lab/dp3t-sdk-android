@@ -101,7 +101,7 @@ public class AppConfigManager {
 	}
 
 	public void addManualApplicationInfo(ApplicationInfo appInfo) {
-		ApplicationList list = getLoadedApplicationsList();
+		ApplicationsList list = getLoadedApplicationsList();
 		if (!list.getApplications().contains(appInfo)) {
 			list.getApplications().add(appInfo);
 			sharedPrefs.edit().putString(PREF_APPLICATION_LIST, Json.toJson(list)).apply();
@@ -109,7 +109,7 @@ public class AppConfigManager {
 	}
 
 	public void removeManualApplicationInfo(ApplicationInfo appInfo) {
-		ApplicationList list = getLoadedApplicationsList();
+		ApplicationsList list = getLoadedApplicationsList();
 		list.getApplications().remove(appInfo);
 		sharedPrefs.edit().putString(PREF_APPLICATION_LIST, Json.toJson(list)).apply();
 	}
