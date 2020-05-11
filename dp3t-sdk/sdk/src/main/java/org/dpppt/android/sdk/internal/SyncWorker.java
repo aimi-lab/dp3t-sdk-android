@@ -15,7 +15,10 @@ import androidx.annotation.NonNull;
 import androidx.work.*;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.TimeUnit;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -75,8 +78,8 @@ public class SyncWorker extends Worker {
 
 		try {
 			doSync(context);
-		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException
-				| SQLiteException e) {
+		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException | SQLiteException
+				| NoSuchAlgorithmException | InvalidKeySpecException e) {
 			Logger.d(TAG, "SyncWorker finished with exception " + e.getMessage());
 			return Result.retry();
 		}
@@ -84,22 +87,23 @@ public class SyncWorker extends Worker {
 		return Result.success();
 	}
 
-	public static void doSync(Context context)
-			throws IOException, StatusCodeException, ServerTimeOffsetException, SQLiteException, SignatureException {
+	public static void doSync(Context context) throws IOException, StatusCodeException, ServerTimeOffsetException,
+			SQLiteException, SignatureException, NoSuchAlgorithmException, InvalidKeySpecException {
 		try {
 			doSyncInternal(context);
 			Logger.i(TAG, "synced");
 			AppConfigManager.getInstance(context).setLastSyncNetworkSuccess(true);
 			SyncErrorState.getInstance().setSyncError(null);
 			BroadcastHelper.sendErrorUpdateBroadcast(context);
-		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException
-				| SQLiteException e) {
+		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SignatureException | SQLiteException
+				| NoSuchAlgorithmException | InvalidKeySpecException e) {
 			Logger.e(TAG, e);
 			AppConfigManager.getInstance(context).setLastSyncNetworkSuccess(false);
 			ErrorState syncError;
 			if (e instanceof ServerTimeOffsetException) {
 				syncError = ErrorState.SYNC_ERROR_TIMING;
-			} else if (e instanceof SignatureException) {
+			} else if (e instanceof SignatureException || e instanceof NoSuchAlgorithmException
+					|| e instanceof InvalidKeySpecException) {
 				syncError = ErrorState.SYNC_ERROR_SIGNATURE;
 			} else if (e instanceof StatusCodeException || e instanceof InvalidProtocolBufferException) {
 				syncError = ErrorState.SYNC_ERROR_SERVER;
@@ -114,8 +118,8 @@ public class SyncWorker extends Worker {
 		}
 	}
 
-	private static void doSyncInternal(Context context)
-			throws IOException, StatusCodeException, ServerTimeOffsetException {
+	private static void doSyncInternal(Context context) throws IOException, StatusCodeException,
+			ServerTimeOffsetException, NoSuchAlgorithmException, InvalidKeySpecException {
 		AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
 		appConfigManager.updateFromDiscoverySynchronous();
 		// ApplicationInfo appConfig = appConfigManager.getAppConfig();

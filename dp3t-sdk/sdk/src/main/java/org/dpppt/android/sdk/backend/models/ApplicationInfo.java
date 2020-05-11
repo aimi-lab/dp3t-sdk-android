@@ -10,16 +10,22 @@
 package org.dpppt.android.sdk.backend.models;
 
 import java.security.PublicKey;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+
+import android.util.Base64;
 
 public class ApplicationInfo {
 
 	private String appId;
 	private String reportBaseUrl;
 	private String bucketBaseUrl;
-	private PublicKey bucketSignaturePublicKey;
+	private String bucketSignaturePublicKey;
 
-	public ApplicationInfo(String appId, String reportBaseUrl, String bucketBaseUrl,
-			PublicKey bucketSignaturePublicKey) {
+	public ApplicationInfo(String appId, String reportBaseUrl, String bucketBaseUrl, String bucketSignaturePublicKey) {
 		this.appId = appId;
 		this.reportBaseUrl = reportBaseUrl;
 		this.bucketBaseUrl = bucketBaseUrl;
@@ -38,8 +44,11 @@ public class ApplicationInfo {
 		return bucketBaseUrl;
 	}
 
-	public PublicKey getBucketSignaturePublicKey() {
-		return bucketSignaturePublicKey;
+	public PublicKey getBucketSignaturePublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+		String base64EncodedPublicKey = bucketSignaturePublicKey.split("-----")[2];
+		KeyFactory kf = KeyFactory.getInstance("EC");
+		EncodedKeySpec keySpecX509 = new X509EncodedKeySpec(Base64.decode(base64EncodedPublicKey, Base64.DEFAULT));
+		return kf.generatePublic(keySpecX509);
 	}
 
 	@Override

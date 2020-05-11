@@ -9,6 +9,9 @@
  */
 package org.dpppt.android.sdk.internal;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -181,6 +184,15 @@ public class AppConfigManager {
 
 	public void setIAmInfected(boolean exposed) {
 		sharedPrefs.edit().putBoolean(PREF_I_AM_INFECTED, exposed).apply();
+	}
+
+	public List<BackendReportRepository> getBackendReportRepositories(Context context) throws IllegalStateException {
+		List<BackendReportRepository> reportRepos = new ArrayList<>();
+		for (ApplicationInfo appConfig : getLoadedApplicationsList().getApplications()) {
+			reportRepos.add(new BackendReportRepository(context, appConfig.getReportBaseUrl()));
+		}
+
+		return reportRepos;
 	}
 
 	public BackendReportRepository getBackendReportRepository(Context context) throws IllegalStateException {

@@ -19,6 +19,8 @@ import androidx.core.content.ContextCompat;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -43,6 +45,8 @@ import org.dpppt.android.sdk.internal.database.models.ExposureDay;
 import org.dpppt.android.sdk.internal.logger.Logger;
 import org.dpppt.android.sdk.internal.util.DayDate;
 import org.dpppt.android.sdk.internal.util.ProcessUtil;
+
+import org.dpppt.android.sdk.internal.backend.BackendReportRepository;
 
 import okhttp3.CertificatePinner;
 
@@ -152,8 +156,8 @@ public class DP3T {
 		checkInit();
 		try {
 			SyncWorker.doSync(context);
-		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SQLiteException
-				| SignatureException ignored) {
+		} catch (IOException | StatusCodeException | ServerTimeOffsetException | SQLiteException | SignatureException
+				| NoSuchAlgorithmException | InvalidKeySpecException ignored) {
 			// has been handled upstream
 		}
 	}
@@ -174,7 +178,7 @@ public class DP3T {
 		}
 		return new TracingStatus(database.getContacts().size(), appConfigManager.isAdvertisingEnabled(),
 				appConfigManager.isReceivingEnabled(), appConfigManager.getLastSyncDate(), infectionStatus,
-				exposureDays, errorStates);
+				exposureDays, errorStates, appConfigManager.getLoadedApplicationsList().getApplications().size());
 	}
 
 	public static void sendIAmInfected(Context context, Date onset, ExposeeAuthMethod exposeeAuthMethod,
@@ -187,22 +191,31 @@ public class DP3T {
 
 		AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
 		try {
-			appConfigManager.getBackendReportRepository(context).addExposee(exposeeRequest, exposeeAuthMethod,
-					new ResponseCallback<Void>() {
-						@Override
-						public void onSuccess(Void response) {
-							appConfigManager.setIAmInfected(true);
-							CryptoModule.getInstance(context).reset();
-							stop(context);
-							callback.onSuccess(response);
-						}
+			for (BackendReportRepository reportRepo : appConfigManager.getBackendReportRepositories(context)) {
+				reportRepo.addExposeeSync(exposeeRequest, exposeeAuthMethod);
+				// reportRepo.addExposee(exposeeRequest, exposeeAuthMethod, new
+				// ResponseCallback<Void>() {
+				// @Override
+				// public void onSuccess(Void response) {
+				// appConfigManager.setIAmInfected(true);
+				// CryptoModule.getInstance(context).reset();
+				// stop(context);
+				// callback.onSuccess(response);
+				// }
 
-						@Override
-						public void onError(Throwable throwable) {
-							callback.onError(throwable);
-						}
-					});
-		} catch (IllegalStateException e) {
+				// @Override
+				// public void onError(Throwable throwable) {
+				// callback.onError(throwable);
+				// }
+				// });
+			}
+
+			appConfigManager.setIAmInfected(true);
+			CryptoModule.getInstance(context).reset();
+			stop(context);
+			callback.onSuccess(null);
+
+		} catch (IllegalStateException | IOException e) {
 			callback.onError(e);
 			Logger.e(TAG, e);
 		}
@@ -220,8 +233,14 @@ public class DP3T {
 		ExposeeRequest exposeeRequest = new ExposeeRequest(
 				toBase64(CryptoModule.getInstance(context).getNewRandomKey()), onsetDate.getStartOfDayTimestamp(), 1,
 				jsonAuthMethod);
-		AppConfigManager.getInstance(context).getBackendReportRepository(context).addExposeeSync(exposeeRequest,
-				exposeeAuthMethod);
+
+		for (BackendReportRepository reportRepo : AppConfigManager.getInstance(context)
+				.getBackendReportRepositories(context)) {
+			reportRepo.addExposeeSync(exposeeRequest, exposeeAuthMethod);
+		}
+
+		// AppConfigManager.getInstance(context).getBackendReportRepository(context).addExposeeSync(exposeeRequest,
+		// exposeeAuthMethod);
 	}
 
 	public static void stop(Context context) {

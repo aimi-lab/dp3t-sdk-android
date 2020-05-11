@@ -23,10 +23,11 @@ public class TracingStatus {
 	private InfectionStatus infectionStatus;
 	private List<ExposureDay> exposureDays;
 	private Collection<ErrorState> errors;
+	private int numEndpoints;
 
-	public TracingStatus(int numberOfContacts, boolean advertising, boolean receiving,
-			long lastSyncDate,
-			InfectionStatus infectionStatus, List<ExposureDay> exposureDays, Collection<ErrorState> errors) {
+	public TracingStatus(int numberOfContacts, boolean advertising, boolean receiving, long lastSyncDate,
+			InfectionStatus infectionStatus, List<ExposureDay> exposureDays, Collection<ErrorState> errors,
+			int numEndpoints) {
 		this.numberOfContacts = numberOfContacts;
 		this.advertising = advertising;
 		this.receiving = receiving;
@@ -34,6 +35,7 @@ public class TracingStatus {
 		this.infectionStatus = infectionStatus;
 		this.exposureDays = exposureDays;
 		this.errors = errors;
+		this.numEndpoints = numEndpoints;
 	}
 
 	public int getNumberOfContacts() {
@@ -62,6 +64,10 @@ public class TracingStatus {
 
 	public Collection<ErrorState> getErrors() {
 		return errors;
+	}
+
+	public int getNumEndpoints() {
+		return numEndpoints;
 	}
 
 	public enum ErrorState {
