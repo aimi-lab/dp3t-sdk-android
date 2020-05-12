@@ -58,7 +58,7 @@ public class DP3T {
 
 	public static final String UPDATE_INTENT_ACTION = "org.dpppt.android.sdk.UPDATE_ACTION";
 
-	private static String appId = "";
+	private static String appId;
 
 	// public static void init(Context context, String appId, PublicKey
 	// signaturePublicKey) {
@@ -92,9 +92,10 @@ public class DP3T {
 			AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
 
 			if (appId == null) { // checkInit
+                                DP3T.appId = applicationInfo.getAppId();
 				appConfigManager.setManualApplicationInfo(applicationInfo);
 				executeInit(context);
-                                DP3T.appId = applicationInfo.getAppId();
+                                
 			} else {
 				// subsequent call to init()
 				appConfigManager.addManualApplicationInfo(applicationInfo);
