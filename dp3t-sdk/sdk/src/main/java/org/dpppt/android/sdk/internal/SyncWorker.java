@@ -136,6 +136,7 @@ public class SyncWorker extends Worker {
 			nextBatchReleaseTime = lastLoadedBatchReleaseTime + BATCH_LENGTH;
 		}
 
+		long maxReleaseTime = Long.MIN_VALUE;
 		for (ApplicationInfo appConfig : appConfigManager.getLoadedApplicationsList().getApplications()) {
 
 			BackendBucketRepository backendBucketRepository = new BackendBucketRepository(context,
@@ -151,9 +152,11 @@ public class SyncWorker extends Worker {
 							batchReleaseServerTime);
 				}
 
-				appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
+				maxReleaseTime = Math.max(maxReleaseTime, batchReleaseTime);
+				// appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
 			}
 		}
+		appConfigManager.setLastLoadedBatchReleaseTime(maxReleaseTime);
 
 		database.removeOldData();
 
